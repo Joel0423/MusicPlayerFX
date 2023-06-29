@@ -1,0 +1,14 @@
+<component name="libraryTable">
+  <library name="lib">
+    <CLASSES>
+      <root url="file://$USER_HOME$/Libraries/javafx-sdk-20.0.1/lib" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="https://openjfx.io/javadoc/20/javafx.controls" />
+      <root url="https://openjfx.io/javadoc/20/javafx.media/" />
+      <root url="https://openjfx.io/javadoc/20/javafx.fxml" />
+    </JAVADOC>
+    <SOURCES />
+    <jarDirectory url="file://$USER_HOME$/Libraries/javafx-sdk-20.0.1/lib" recursive="false" />
+  </library>
+</component>
