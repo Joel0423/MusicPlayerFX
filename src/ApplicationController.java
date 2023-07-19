@@ -34,6 +34,8 @@ public class ApplicationController
     @FXML
     TableColumn<Song, String> artistColumn;
     @FXML
+    TableColumn<Song, String> orderColumn;
+    @FXML
     Slider progressbar;
     @FXML
     CheckBox shuffle;
@@ -61,6 +63,18 @@ public class ApplicationController
     ComboBox<Playlist> playlistBox;
     @FXML
     ContextMenu musicContextMenu;
+    @FXML
+    Button orderButton;
+    @FXML
+    TextField orderText;
+    @FXML
+    CheckBox autoplayCheckBox;
+    @FXML
+    Button searchButton;
+    @FXML
+    ComboBox<SearchCategory> searchBox;
+    @FXML
+    TextField searchText;
 
     int lastIndex;
     Media media;
@@ -87,6 +101,7 @@ public class ApplicationController
         albumColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Album"));
         artistColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Artist"));
         filepathColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Filepath"));
+        orderColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Order"));
 
         musicTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) ->
         {
@@ -95,7 +110,11 @@ public class ApplicationController
             {
                 stopMusic();
                 loadMedia();
-                playMusic();
+
+                if(autoplayCheckBox.isSelected())
+                {
+                    playMusic();
+                }
             }
         });
 
@@ -113,6 +132,36 @@ public class ApplicationController
             removeFromPlaylist();
         });
 
+        searchBox.getItems().addAll(
+                new SearchCategory("By Title","title"),
+                new SearchCategory("By Artist","artist"),
+                new SearchCategory("By Album","album"),
+                new SearchCategory("By Genre","genre"),
+                new SearchCategory("By Release Year","year"),
+                new SearchCategory("By Custom Tag","tags")
+        );
+
+        progressbar.setLabelFormatter(new StringConverter<Double>()
+        {
+            @Override
+            public String toString(Double durationdub)
+            {
+                int sec =(int) Math.floor(durationdub);
+
+                int min = sec/60;
+                int remsec = (sec%60);
+
+                return String.format("%d:%02d",min,remsec);
+            }
+
+            @Override
+            public Double fromString(String s)
+            {
+                return null;
+            }
+
+        });
+
     }
 
     @FXML
@@ -127,7 +176,7 @@ public class ApplicationController
                 tm.stop();
                 PlayButton.setText("Play");
             }
-            else if(mediaPlayer.getStatus() == MediaPlayer.Status.PAUSED)
+            else if(mediaPlayer.getStatus() == MediaPlayer.Status.PAUSED || mediaPlayer.getStatus() == MediaPlayer.Status.READY)
             {
                 playMusic();
                 tm.play();
@@ -135,7 +184,10 @@ public class ApplicationController
             }
             else
             {
-                musicTable.getSelectionModel().select(0);
+                if(musicTable.getSelectionModel().getSelectedItem() == null)
+                {
+                    musicTable.getSelectionModel().select(0);
+                }
                 loadMedia();
                 playMusic();
             }
@@ -176,6 +228,11 @@ public class ApplicationController
     {
         if(!libraryBox.getSelectionModel().isEmpty())
         {
+            musicTable.setPrefWidth(500.00);
+            orderText.clear();
+            orderButton.setVisible(false);
+            orderText.setVisible(false);
+            orderColumn.setVisible(false);
             if(musicContextMenu.getItems().size() == 2)
             {
                 musicContextMenu.getItems().remove(1);
@@ -192,6 +249,11 @@ public class ApplicationController
     {
         if(!playlistBox.getSelectionModel().isEmpty())
         {
+            musicTable.setPrefWidth(590.00);
+            orderText.clear();
+            orderButton.setVisible(true);
+            orderText.setVisible(true);
+            orderColumn.setVisible(true);
             libraryBox.getSelectionModel().clearSelection();
 
             playlistSongs = obj.getMusicList(playlistBox.getSelectionModel().getSelectedItem().getPlaylistID());
@@ -210,6 +272,34 @@ public class ApplicationController
             {
                 resetPlayer();
                 musicTable.setPlaceholder(new Label("No music has been entered in this playlist \nRight click on a song in library mode to add"));
+            }
+
+        }
+    }
+
+    @FXML
+    void changeOrder()
+    {
+        String order = orderText.getText();
+        if(!order.isBlank())
+        {
+            try
+            {
+                int ordernum = Integer.parseInt(order);
+                int id = playlistBox.getSelectionModel().getSelectedItem().getPlaylistID();
+                int selindex = musicTable.getSelectionModel().getSelectedIndex();
+                obj.changeOrder(id,musicTable.getSelectionModel().getSelectedItem().getFilepath(),ordernum);
+
+                musicTable.setItems(obj.getMusicList(id));
+                setMusicPlayer();
+            }
+            catch(NumberFormatException e)
+            {
+                Alert al = new Alert(Alert.AlertType.WARNING);
+                al.setHeaderText("Cannot change order");
+                al.setContentText("Enter only numbers");
+                al.show();
+                orderText.clear();
             }
 
         }
@@ -256,6 +346,10 @@ public class ApplicationController
         yearLabel.setText("Year: ");
         lyricsBox.setText("");
         customTagLabel.setText("Custom Tags: ");
+        musicTable.setPrefWidth(500.00);
+        orderText.clear();
+        orderText.setVisible(false);
+        orderButton.setVisible(false);
     }
 
     void stopMusic()
@@ -281,7 +375,6 @@ public class ApplicationController
         volumeSlider.setDisable(false);
 
         tm.play();
-
 
     }
 
@@ -316,15 +409,25 @@ public class ApplicationController
             @Override
             public void run()
             {
-
-                if(shuffle.isSelected())
+                if(autoplayCheckBox.isSelected())
                 {
-                    selectRandomSong();
+                    if (shuffle.isSelected())
+                    {
+                        selectRandomSong();
+                    }
+                    else
+                    {
+                        nextButtonPress();
+                    }
                 }
                 else
-                    nextButtonPress();
+                {
+                    stopMusic();
+                    loadMedia();
+                }
             }
         });
+        orderText.clear();
 
     }
 
@@ -349,26 +452,7 @@ public class ApplicationController
         double d = media.getDuration().toSeconds();
         progressbar.setMax(d);
         progressbar.setMajorTickUnit(d/4);
-        progressbar.setLabelFormatter(new StringConverter<Double>()
-        {
-            @Override
-            public String toString(Double durationdub)
-            {
-                int sec =(int) Math.floor(durationdub);
 
-                int min = sec/60;
-                int remsec = (sec%60);
-
-                return String.format("%d:%02d",min,remsec);
-            }
-
-            @Override
-            public Double fromString(String s)
-            {
-                return null;
-            }
-
-        });
 
     }
 
@@ -555,4 +639,30 @@ public class ApplicationController
             }
         });
     }
+
+    @FXML
+    void searchMusic()
+    {
+        if(!searchBox.getSelectionModel().isEmpty() && !searchText.getText().isBlank())
+        {
+            String category = searchBox.getSelectionModel().getSelectedItem().getCategory();
+            String searchterm = searchText.getText();
+
+            ObservableList<Song> searchList = obj.getMusicList(category,searchterm);
+            if(!searchList.isEmpty())
+            {
+                resetPlayer();
+                musicTable.setItems(searchList);
+                setMusicPlayer();
+            }
+            else
+            {
+                Alert al = new Alert(Alert.AlertType.INFORMATION);
+                al.setHeaderText("No results");
+                al.setContentText("No music found with "+category+": '"+searchText.getText()+"' ");
+                al.show();
+            }
+        }
+    }
+
 }

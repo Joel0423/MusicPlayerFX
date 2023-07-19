@@ -14,15 +14,16 @@
 <?import javafx.scene.control.TableColumn?>
 <?import javafx.scene.control.TableView?>
 <?import javafx.scene.control.TextArea?>
+<?import javafx.scene.control.TextField?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.Pane?>
 
-<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="622.0" prefWidth="855.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ApplicationController">
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="622.0" prefWidth="924.0" xmlns="http://javafx.com/javafx/20.0.1" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ApplicationController">
    <children>
       <Button layoutX="182.0" layoutY="494.0" mnemonicParsing="false" onAction="#previousButtonPress" prefHeight="36.0" prefWidth="68.0" text="Previous" />
       <Button layoutX="438.0" layoutY="494.0" mnemonicParsing="false" onAction="#nextButtonPress" prefHeight="36.0" prefWidth="68.0" text="Next" />
       <Button fx:id="PlayButton" layoutX="310.0" layoutY="494.0" mnemonicParsing="false" onAction="#playButtonPress" prefHeight="36.0" prefWidth="68.0" text="Play" />
-      <MenuBar layoutY="2.0" prefHeight="25.0" prefWidth="855.0">
+      <MenuBar layoutY="2.0" prefHeight="25.0" prefWidth="924.0">
         <menus>
           <Menu mnemonicParsing="false" text="import">
                <items>
@@ -42,14 +43,15 @@
 
         </menus>
       </MenuBar>
-      <Separator layoutX="680.0" layoutY="87.0" prefHeight="11.0" prefWidth="175.0" />
-      <ComboBox fx:id="libraryBox" layoutX="701.0" layoutY="116.0" onAction="#libraryComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
-      <TableView fx:id="musicTable" layoutX="180.0" layoutY="57.0" prefHeight="373.0" prefWidth="501.0">
+      <Separator layoutX="680.0" layoutY="87.0" prefHeight="11.0" prefWidth="250.0" />
+      <ComboBox fx:id="libraryBox" layoutX="790.0" layoutY="115.0" onAction="#libraryComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
+      <TableView fx:id="musicTable" layoutX="180.0" layoutY="57.0" prefHeight="373.0" prefWidth="500.0">
         <columns>
           <TableColumn fx:id="titleColumn" editable="false" prefWidth="170.0" text="Title" />
           <TableColumn fx:id="artistColumn" editable="false" minWidth="0.0" prefWidth="170.0" text="Artist" />
             <TableColumn fx:id="albumColumn" minWidth="0.0" prefWidth="160.0" text="Album" />
             <TableColumn fx:id="filepathColumn" editable="false" minWidth="0.0" prefWidth="0.0" sortable="false" text="Filepath" visible="false" />
+            <TableColumn fx:id="orderColumn" editable="false" prefWidth="100.0" text="Order" visible="false" />
         </columns>
          <contextMenu>
             <ContextMenu fx:id="musicContextMenu">
@@ -76,8 +78,14 @@
       <Label fx:id="customTagLabel" alignment="TOP_LEFT" layoutX="15.0" layoutY="328.0" prefHeight="36.0" prefWidth="160.0" text="Custom Tags:" wrapText="true" />
       <Button fx:id="createCustomTagButton" layoutX="190.0" layoutY="564.0" mnemonicParsing="false" onAction="#createCustomTag" text="Create Custom Tag" />
       <Button fx:id="stopPlaybackButton" layoutX="334.0" layoutY="564.0" mnemonicParsing="false" onAction="#resetPlayer" text="Stop Playback" />
-      <ComboBox fx:id="playlistBox" layoutX="701.0" layoutY="178.0" onAction="#playlistComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
-      <Label layoutX="701.0" layoutY="98.0" text="Libraries" />
-      <Label layoutX="701.0" layoutY="161.0" text="Playlists" />
+      <ComboBox fx:id="playlistBox" layoutX="790.0" layoutY="178.0" onAction="#playlistComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
+      <Label layoutX="790.0" layoutY="98.0" text="Libraries" />
+      <Label layoutX="790.0" layoutY="161.0" text="Playlists" />
+      <Button fx:id="orderButton" layoutX="463.0" layoutY="577.0" mnemonicParsing="false" onAction="#changeOrder" text="Change Order:" visible="false" />
+      <TextField fx:id="orderText" layoutX="561.0" layoutY="577.0" prefHeight="25.0" prefWidth="41.0" promptText="No." visible="false" />
+      <CheckBox fx:id="autoplayCheckBox" layoutX="525.0" layoutY="490.0" mnemonicParsing="false" selected="true" text="Auto Play" />
+      <ComboBox fx:id="searchBox" layoutX="773.0" layoutY="27.0" prefHeight="25.0" prefWidth="140.0" promptText="Select" />
+      <Button fx:id="searchButton" layoutX="571.0" layoutY="27.0" mnemonicParsing="false" onAction="#searchMusic" text="Search" />
+      <TextField fx:id="searchText" layoutX="623.0" layoutY="27.0" promptText="search term" />
    </children>
 </AnchorPane>

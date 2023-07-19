@@ -274,14 +274,14 @@ public class Connector
 
         try
         {
-            st = c.prepareStatement("select title,artist, album, music.filepath from music, playlists, [playlist-songs] where playlists.playlistID=? and [playlist-songs].playlistID = playlists.playlistID and [playlist-songs].filepath = music.filepath;");
+            st = c.prepareStatement("select title,artist, album, music.filepath,[order] from music, playlists, [playlist-songs] where playlists.playlistID=? and [playlist-songs].playlistID = playlists.playlistID and [playlist-songs].filepath = music.filepath order by [order];");
             st.setInt(1, playlistID);
 
             musicResultSet = st.executeQuery();
 
             while(musicResultSet.next())
             {
-                musicList.add( new Song(musicResultSet.getString(1),musicResultSet.getString(2), musicResultSet.getString(3), musicResultSet.getString(4)));
+                musicList.add( new Song(musicResultSet.getString(1),musicResultSet.getString(2), musicResultSet.getString(3), musicResultSet.getString(4), Integer.toString(musicResultSet.getInt(5))));
             }
 
         }
@@ -302,6 +302,53 @@ public class Connector
             }
 
         }
+        return  musicList;
+    }
+
+    ObservableList<Song> getMusicList(String category,String text)
+    {
+
+        ResultSet musicResultSet = null;
+        PreparedStatement st = null;
+        ObservableList<Song> musicList = FXCollections.observableArrayList();
+        try
+        {
+            if(!category.equals("tags"))
+            {
+                st = c.prepareStatement(String.format( "select title,artist,album, filepath from music where %s like ?",category));
+                st.setString(1, "%"+text+"%");
+            }
+            else
+            {
+                st = c.prepareStatement("select title,artist,album, music.filepath from music,[custom-tags] where music.filepath=[custom-tags].filepath and tags like ?");
+                st.setString(1,"%"+text+"%");
+            }
+
+            musicResultSet = st.executeQuery();
+
+            while(musicResultSet.next())
+            {
+                musicList.add( new Song(musicResultSet.getString(1),musicResultSet.getString(2), musicResultSet.getString(3), musicResultSet.getString(4)));
+            }
+
+        }
+        catch (SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+        /*finally
+        {
+            try
+            {
+                musicResultSet.close();
+                st.close();
+            }
+            catch (SQLException e)
+            {
+                throw new RuntimeException(e);
+            }
+
+        }*/
         return  musicList;
     }
 
@@ -455,24 +502,36 @@ public class Connector
 
         PreparedStatement st = null;
         PreparedStatement st2 = null;
+        PreparedStatement st3 = null;
         ResultSet rs = null;
+        ResultSet rs2 = null;
         ObservableList<Playlist> olist = FXCollections.observableArrayList();
 
         try
         {
-            st = c.prepareStatement("insert into [playlist-songs] (PlaylistID, filepath) values(?, ?)");
+            st = c.prepareStatement("insert into [playlist-songs] values(?, ?, ?)");
             st2 = c.prepareStatement("select count(*) from [playlist-songs] where PlaylistID=? and filepath=?");
+            st3 = c.prepareStatement("select MAX([order]) from [playlist-songs] where PlaylistID=?");
 
             st.setInt(1, playlistID);
             st.setString(2, filepath);
             st2.setInt(1, playlistID);
             st2.setString(2, filepath);
+            st3.setInt(1, playlistID);
+
+            rs2 = st3.executeQuery();
+            //getInt() returns 0 if sql value is null
+            int count = rs2.getInt(1);
+            st.setInt(3,count+1);
+            rs2.close();
+            st3.close();
 
             rs = st2.executeQuery();
             if(rs.getInt(1)==1)
             {
                 rs.close();
                 st2.close();
+                System.out.println("nooooo");
                 return false;
             }
             else
@@ -480,6 +539,7 @@ public class Connector
                 rs.close();
                 st2.close();
                 st.execute();
+                System.out.println("yessss");
                 return true;
             }
         }
@@ -535,6 +595,34 @@ public class Connector
         {
             st = c.prepareStatement("delete from playlists where PlaylistID=?");
             st.setInt(1,id);
+            st.execute();
+        }
+        catch(SQLException e)
+        {
+            throw new RuntimeException(e);
+        }
+        finally
+        {
+            try
+            {
+                st.close();
+            }
+            catch (SQLException e)
+            {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    void changeOrder(int playlistID,String filepath, int newOrder)
+    {
+        PreparedStatement st = null;
+        try
+        {
+            st = c.prepareStatement("update [playlist-songs] set [order]=? where PlaylistID=? and filepath=?");
+            st.setInt(1,newOrder);
+            st.setInt(2,playlistID);
+            st.setString(3,filepath);
             st.execute();
         }
         catch(SQLException e)

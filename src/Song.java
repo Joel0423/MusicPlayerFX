@@ -1,3 +1,6 @@
+import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.property.StringProperty;
+
 public class Song
 {
     private String title;
@@ -7,6 +10,7 @@ public class Song
     private String genre;
     private String year;
     private String lyrics;
+    private String order;
 
     public Song(String title, String artist, String album, String filepath)
     {
@@ -14,6 +18,20 @@ public class Song
         this.album = album;
         this.artist = artist;
         this.filepath = filepath;
+    }
+
+    public Song(String title, String artist, String album, String filepath, String order)
+    {
+        this.title = title;
+        this.album = album;
+        this.artist = artist;
+        this.filepath = filepath;
+        this.order = order;
+    }
+
+    public void setOrder(String order)
+    {
+        this.order = order;
     }
 
     public Song(String title, String artist, String album, String genre, String year, String lyrics)
@@ -39,6 +57,8 @@ public class Song
     {
         return filepath;
     }
+
+    public String getOrder() { return order; }
 
     public String getGenre()
     {
