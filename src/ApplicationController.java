@@ -1,18 +1,20 @@
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
-import javafx.collections.FXCollections;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
-import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
-
 import java.io.File;
+import java.io.FilenameFilter;
 import java.sql.SQLException;
 import java.util.Random;
 
@@ -84,11 +86,104 @@ public class ApplicationController
     MenuItem removeFromPlaylist;
     ObservableList<Song> playlistSongs;
 
+    ChangeListener musicTableSelectedItemListener = new ChangeListener()
+    {
+        @Override
+        public void changed(ObservableValue observableValue, Object oldSel, Object newSel)
+        {
+
+            if(newSel != null )
+            {
+                stopMusic();
+
+                Song selsong = musicTable.getSelectionModel().getSelectedItem();
+                int index = musicTable.getSelectionModel().getSelectedIndex();
+                String filepath = selsong.getFilepath();
+                File song = new File(filepath);
+                if(song.exists())
+                {
+                    loadMedia();
+
+                    if(autoplayCheckBox.isSelected())
+                    {
+                        playMusic();
+                    }
+                }
+                else
+                {
+                    stopMusic();
+                    Alert a = new Alert(Alert.AlertType.ERROR);
+                    a.setHeaderText("Song cannot be loaded");
+                    a.setContentText("The song '"+selsong.getTitle()+"' could not be found on the disk \n It may have been moved or deleted \n Do you want to remove it from the database?");
+                    a.getButtonTypes().remove(ButtonType.OK);
+                    a.getButtonTypes().add(ButtonType.YES);
+                    a.getButtonTypes().add(ButtonType.NO);
+                    a.show();
+                    a.setOnCloseRequest(e -> {
+                        if(a.getResult().getButtonData() == ButtonType.YES.getButtonData())
+                        {
+                            Song unavailableSong = musicTable.getSelectionModel().getSelectedItem();
+                            obj.removeFromMusicList(unavailableSong.getFilepath());
+                            musicTable.getItems().remove(unavailableSong);
+
+
+                        }
+                        musicTable.getSelectionModel().clearSelection();
+                        media = null;
+                        mediaPlayer = null;
+
+                    });
+
+                    tm.stop();
+                    progressbar.setValue(0.00);
+                    progressbar.setMax(0.00);
+
+                }
+                System.out.println("trigg");
+
+            }
+        }
+    };
+
     @FXML
     void importMusic()
     {
-        obj.importMedia();
+        File directory = new File(System.getProperty("user.home"));
 
+        DirectoryChooser dc = new DirectoryChooser();
+        dc.setInitialDirectory(directory);
+        directory = dc.showDialog(new Stage());
+        if(directory != null)
+        {
+            File[] fileArray = directory.listFiles(new FilenameFilter()
+            {
+                @Override
+                public boolean accept(File dir, String name)
+                {
+                    return name.toLowerCase().endsWith(".mp3");
+                }
+            });
+
+            //mp3 files exist in the selected folder
+            if(fileArray!=null && fileArray.length != 0)
+            {
+                obj.importMedia(directory, fileArray);
+
+                Alert al = new Alert(Alert.AlertType.INFORMATION);
+                al.setHeaderText("Library Importing");
+                al.setContentText("Your music library is being imported \n if it contains a large number of files you may need to wait for a few minutes \n for all the files to be imported");
+                al.show();
+
+                al.setOnCloseRequest(e -> {
+                    refreshLibraries();
+                });
+            }
+            else
+            {
+                System.out.println("No music here");
+            }
+
+        }
     }
 
     @FXML
@@ -103,20 +198,7 @@ public class ApplicationController
         filepathColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Filepath"));
         orderColumn.setCellValueFactory(new PropertyValueFactory<Song, String>("Order"));
 
-        musicTable.getSelectionModel().selectedItemProperty().addListener((obs, oldSel, newSel) ->
-        {
-            //checking old selection so that code only runs when selected song is changed in the same list
-            if(newSel != null && oldSel!=null)
-            {
-                stopMusic();
-                loadMedia();
-
-                if(autoplayCheckBox.isSelected())
-                {
-                    playMusic();
-                }
-            }
-        });
+        musicTable.getSelectionModel().selectedItemProperty().addListener(musicTableSelectedItemListener);
 
         tm = new Timeline(
                 new KeyFrame(Duration.seconds(1.0),e ->{
@@ -179,6 +261,7 @@ public class ApplicationController
             else if(mediaPlayer.getStatus() == MediaPlayer.Status.PAUSED || mediaPlayer.getStatus() == MediaPlayer.Status.READY)
             {
                 playMusic();
+                System.out.println("here?");
                 tm.play();
 
             }
@@ -188,8 +271,13 @@ public class ApplicationController
                 {
                     musicTable.getSelectionModel().select(0);
                 }
-                loadMedia();
-                playMusic();
+
+                File song = new File(musicTable.getSelectionModel().getSelectedItem().getFilepath());
+                if(song.exists())
+                {
+                    loadMedia();
+                    playMusic();
+                }
             }
         }
 
@@ -197,24 +285,26 @@ public class ApplicationController
     @FXML
     void previousButtonPress()
     {
-        if(mediaPlayer != null && !musicTable.getSelectionModel().isSelected(0))
+        if(!musicTable.getSelectionModel().isEmpty())
         {
-            stopMusic();
-            musicTable.getSelectionModel().selectPrevious();
-
+            if (!musicTable.getSelectionModel().isSelected(0))
+            {
+                stopMusic();
+                musicTable.getSelectionModel().selectPrevious();
+            }
         }
 
     }
     @FXML
     void nextButtonPress()
     {
-        if(mediaPlayer != null)
+        if(!musicTable.getSelectionModel().isEmpty())
         {
-            if(shuffle.isSelected())
+            if (shuffle.isSelected())
             {
                 selectRandomSong();
             }
-            else if(!musicTable.getSelectionModel().isSelected(lastIndex))
+            else if (!musicTable.getSelectionModel().isSelected(lastIndex))
             {
                 stopMusic();
                 musicTable.getSelectionModel().selectNext();
@@ -226,20 +316,50 @@ public class ApplicationController
     @FXML
     void libraryComboBoxItemClicked() //update music tableview
     {
+        clearMetadata();
+        stopMusic();
+        media = null;
+        mediaPlayer = null;
+        tm.stop();
+        progressbar.setValue(0.00);
+        progressbar.setMax(0.00);
+
+        Libraries selLib = libraryBox.getSelectionModel().getSelectedItem();
         if(!libraryBox.getSelectionModel().isEmpty())
         {
-            musicTable.setPrefWidth(500.00);
-            orderText.clear();
-            orderButton.setVisible(false);
-            orderText.setVisible(false);
-            orderColumn.setVisible(false);
-            if(musicContextMenu.getItems().size() == 2)
+            if(new File(selLib.getFolderpath()).exists())
             {
-                musicContextMenu.getItems().remove(1);
+                musicTable.setPrefWidth(500.00);
+                orderText.clear();
+                orderButton.setVisible(false);
+                orderText.setVisible(false);
+                orderColumn.setVisible(false);
+                if (musicContextMenu.getItems().size() == 2)
+                {
+                    musicContextMenu.getItems().remove(1);
+                }
+                playlistBox.getSelectionModel().clearSelection();
+                musicTable.setItems(obj.getMusicList(libraryBox.getSelectionModel().getSelectedItem().getFolderpath()));
+                lastIndex = musicTable.getItems().size() - 1;
             }
-            playlistBox.getSelectionModel().clearSelection();
-            musicTable.setItems(obj.getMusicList(libraryBox.getSelectionModel().getSelectedItem().getFolderpath()));
-            setMusicPlayer();
+            else
+            {
+                Alert a = new Alert(Alert.AlertType.ERROR);
+                a.setHeaderText("Library not available");
+                a.setContentText("The library '"+selLib.getFolder()+"' could not be found on the disk \n It may have been moved or deleted \n Do you want to remove it from the database?");
+                a.getButtonTypes().remove(ButtonType.OK);
+                a.getButtonTypes().add(ButtonType.YES);
+                a.getButtonTypes().add(ButtonType.NO);
+                a.show();
+                a.setOnCloseRequest(e -> {
+                    if(a.getResult().getButtonData() == ButtonType.YES.getButtonData())
+                    {
+                        obj.removeFromLibraries(selLib.getFolderpath());
+                        libraryBox.getItems().remove(selLib);
+                    }
+                    resetPlayer();
+                });
+            }
         }
 
     }
@@ -247,6 +367,14 @@ public class ApplicationController
     @FXML
     void playlistComboBoxItemClicked() //update music tableview
     {
+        clearMetadata();
+        stopMusic();
+        media = null;
+        mediaPlayer = null;
+        tm.stop();
+        progressbar.setValue(0.00);
+        progressbar.setMax(0.00);
+
         if(!playlistBox.getSelectionModel().isEmpty())
         {
             musicTable.setPrefWidth(590.00);
@@ -266,7 +394,8 @@ public class ApplicationController
             if(!playlistSongs.isEmpty())
             {
                 musicTable.setItems(playlistSongs);
-                setMusicPlayer();
+                lastIndex = musicTable.getItems().size()-1;
+                //setMusicPlayer();
             }
             else
             {
@@ -287,7 +416,6 @@ public class ApplicationController
             {
                 int ordernum = Integer.parseInt(order);
                 int id = playlistBox.getSelectionModel().getSelectedItem().getPlaylistID();
-                int selindex = musicTable.getSelectionModel().getSelectedIndex();
                 obj.changeOrder(id,musicTable.getSelectionModel().getSelectedItem().getFilepath(),ordernum);
 
                 musicTable.setItems(obj.getMusicList(id));
@@ -313,6 +441,18 @@ public class ApplicationController
         }
 
         musicTable.getSelectionModel().select(0);
+        loadMedia();
+
+    }
+
+    void setMusicPlayer(int index)
+    {
+        if(mediaPlayer != null)
+        {
+            stopMusic();
+        }
+
+        musicTable.getSelectionModel().select(index);
         lastIndex = musicTable.getItems().size()-1;
         loadMedia();
 
@@ -337,8 +477,19 @@ public class ApplicationController
         });
         tm.stop();
         progressbar.setDisable(true);
+        progressbar.setValue(0.00);
+        progressbar.setMax(0.00);
         volumeSlider.setDisable(true);
 
+        clearMetadata();
+        musicTable.setPrefWidth(500.00);
+        orderText.clear();
+        orderText.setVisible(false);
+        orderButton.setVisible(false);
+    }
+
+    void clearMetadata()
+    {
         titleLabel.setText("Title: ");
         artistLabel.setText("Artist: ");
         albumLabel.setText("Album: ");
@@ -346,10 +497,6 @@ public class ApplicationController
         yearLabel.setText("Year: ");
         lyricsBox.setText("");
         customTagLabel.setText("Custom Tags: ");
-        musicTable.setPrefWidth(500.00);
-        orderText.clear();
-        orderText.setVisible(false);
-        orderButton.setVisible(false);
     }
 
     void stopMusic()
@@ -367,68 +514,75 @@ public class ApplicationController
         if(mediaPlayer != null)
         {
             mediaPlayer.setVolume(volumeSlider.getValue()/100);
+            mediaPlayer.play();
+            PlayButton.setText("Pause");
+
+            progressbar.setDisable(false);
+            volumeSlider.setDisable(false);
+
+            tm.play();
         }
-        mediaPlayer.play();
-        PlayButton.setText("Pause");
 
-        progressbar.setDisable(false);
-        volumeSlider.setDisable(false);
-
-        tm.play();
 
     }
 
     void loadMedia()
     {
-        String filepath = musicTable.getSelectionModel().getSelectedItem().getFilepath();
-        media = new Media(new File(filepath).toURI().toString());
-        mediaPlayer = new MediaPlayer(media);
+        Song selsong = musicTable.getSelectionModel().getSelectedItem();
+        String filepath = selsong.getFilepath();
+        File song = new File(filepath);
 
-        mediaPlayer.setOnReady(new Runnable()
-        {
-            @Override
-            public void run()
+            media = new Media(song.toURI().toString());
+            mediaPlayer = new MediaPlayer(media);
+
+            mediaPlayer.setOnReady(new Runnable()
             {
-                setProgressbar();
-
-                Song metadata = obj.getSongMetadata(filepath);
-                titleLabel.setText("Title: "+metadata.getTitle());
-                artistLabel.setText("Artist: "+metadata.getArtist());
-                albumLabel.setText("Album: "+metadata.getAlbum());
-                genreLabel.setText("Genre: "+metadata.getGenre());
-                yearLabel.setText("Year: "+metadata.getYear());
-                lyricsBox.setText(metadata.getLyrics());
-
-                String tags = obj.getCustomTags(filepath);
-                customTagLabel.setText("Custom Tags: "+tags);
-            }
-        });
-
-        mediaPlayer.setOnEndOfMedia(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                if(autoplayCheckBox.isSelected())
+                @Override
+                public void run()
                 {
-                    if (shuffle.isSelected())
+                    if(media != null)
                     {
-                        selectRandomSong();
+                        setProgressbar();
+
+                        Song metadata = obj.getSongMetadata(filepath);
+                        titleLabel.setText("Title: " + metadata.getTitle());
+                        artistLabel.setText("Artist: " + metadata.getArtist());
+                        albumLabel.setText("Album: " + metadata.getAlbum());
+                        genreLabel.setText("Genre: " + metadata.getGenre());
+                        yearLabel.setText("Year: " + metadata.getYear());
+                        lyricsBox.setText(metadata.getLyrics());
+
+                        String tags = obj.getCustomTags(filepath);
+                        customTagLabel.setText("Custom Tags: " + tags);
+                    }
+                }
+            });
+
+            mediaPlayer.setOnEndOfMedia(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    if (autoplayCheckBox.isSelected())
+                    {
+                        if (shuffle.isSelected())
+                        {
+                            selectRandomSong();
+                        }
+                        else
+                        {
+                            nextButtonPress();
+                        }
                     }
                     else
                     {
-                        nextButtonPress();
+                        stopMusic();
+                        loadMedia();
                     }
                 }
-                else
-                {
-                    stopMusic();
-                    loadMedia();
-                }
-            }
-        });
-        orderText.clear();
+            });
 
+        orderText.clear();
     }
 
     void selectRandomSong()
@@ -456,7 +610,6 @@ public class ApplicationController
 
     }
 
-    @FXML
     void refreshLibraries()
     {
         if(obj.loadLibraries() != null)
@@ -549,6 +702,7 @@ public class ApplicationController
     @FXML
     void removeFromPlaylist()
     {
+        clearMetadata();
         if(musicTable.getSelectionModel().getSelectedItem() != null)
         {
             String filep = musicTable.getSelectionModel().getSelectedItem().getFilepath();
@@ -562,9 +716,42 @@ public class ApplicationController
             a.show();
 
             //removing from observable list
-            playlistSongs.remove(musicTable.getSelectionModel().getFocusedIndex());
-            musicTable.setItems(playlistSongs);
-            setMusicPlayer();
+            int index = musicTable.getSelectionModel().getFocusedIndex();
+            playlistSongs.remove(index);
+
+            if(!musicTable.getItems().isEmpty())
+            {
+                musicTable.setItems(playlistSongs);
+                stopMusic();
+                if(autoplayCheckBox.isSelected())
+                {
+                    if(index == lastIndex)
+                    {
+                        setMusicPlayer(index - 1);
+                    }
+                    else if(index == 0)
+                    {
+                        setMusicPlayer();
+                    }
+                    else {
+                        setMusicPlayer(index);
+                    }
+                }
+                else
+                {
+                    musicTable.getSelectionModel().clearSelection();
+                    media = null;
+                    mediaPlayer = null;
+                }
+
+
+            }
+            else
+            {
+                resetPlayer();
+                musicTable.setPlaceholder(new Label("No music has been entered in this playlist \nRight click on a song in library mode to add"));
+            }
+
         }
     }
 
@@ -576,35 +763,38 @@ public class ApplicationController
             String filep = musicTable.getSelectionModel().getSelectedItem().getFilepath();
             String name = musicTable.getSelectionModel().getSelectedItem().getTitle();
             ChoiceDialog<Playlist> cd = new ChoiceDialog<Playlist>();
-            cd.getItems().addAll( obj.getPlaylists());
-            cd.setHeaderText("Adding to playlist");
-            cd.setContentText("Select the playlist to add '"+name+"' to");
-            cd.show();
+            if(obj.getPlaylists() != null)
+            {
+                cd.getItems().addAll(obj.getPlaylists());
+                cd.setHeaderText("Adding to playlist");
+                cd.setContentText("Select the playlist to add '" + name + "' to");
+                cd.show();
 
-            cd.setOnCloseRequest(e -> {
-                Playlist p = cd.getResult();
-                if(p !=null)
-                {
-                    int id = p.getPlaylistID();
-                    Boolean bool = obj.addtoPlaylist(filep,id);
-
-                    if(bool == true)
+                cd.setOnCloseRequest(e -> {
+                    Playlist p = cd.getResult();
+                    if (p != null)
                     {
-                        Alert a = new Alert(Alert.AlertType.INFORMATION);
-                        a.setHeaderText("Added to playlist");
-                        a.setContentText("added '"+musicTable.getSelectionModel().getSelectedItem().getTitle()+"' to the playlist '"+p.getPlaylistName()+"'");
-                        a.show();
-                    }
-                    else
-                    {
-                        Alert a = new Alert(Alert.AlertType.INFORMATION);
-                        a.setHeaderText("Could not add to playlist");
-                        a.setContentText("'"+musicTable.getSelectionModel().getSelectedItem().getTitle()+"' is already in the playlist '"+p.getPlaylistName()+"'");
-                        a.show();
-                    }
+                        int id = p.getPlaylistID();
+                        Boolean bool = obj.addtoPlaylist(filep, id);
 
-                }
-            });
+                        if (bool == true)
+                        {
+                            Alert a = new Alert(Alert.AlertType.INFORMATION);
+                            a.setHeaderText("Added to playlist");
+                            a.setContentText("added '" + musicTable.getSelectionModel().getSelectedItem().getTitle() + "' to the playlist '" + p.getPlaylistName() + "'");
+                            a.show();
+                        }
+                        else
+                        {
+                            Alert a = new Alert(Alert.AlertType.INFORMATION);
+                            a.setHeaderText("Could not add to playlist");
+                            a.setContentText("'" + musicTable.getSelectionModel().getSelectedItem().getTitle() + "' is already in the playlist '" + p.getPlaylistName() + "'");
+                            a.show();
+                        }
+
+                    }
+                });
+            }
 
         }
 

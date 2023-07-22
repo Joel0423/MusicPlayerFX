@@ -29,11 +29,6 @@
                <items>
                   <MenuItem mnemonicParsing="false" onAction="#importMusic" text="Import folder" />
                </items></Menu>
-            <Menu mnemonicParsing="false" text="refresh">
-              <items>
-                  <MenuItem mnemonicParsing="false" onAction="#refreshLibraries" text="refresh libraries" />
-              </items>
-            </Menu>
             <Menu mnemonicParsing="false" text="Playlist">
               <items>
                 <MenuItem mnemonicParsing="false" onAction="#createPlaylist" text="Create Playlist" />
@@ -44,7 +39,7 @@
         </menus>
       </MenuBar>
       <Separator layoutX="680.0" layoutY="87.0" prefHeight="11.0" prefWidth="250.0" />
-      <ComboBox fx:id="libraryBox" layoutX="790.0" layoutY="115.0" onAction="#libraryComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
+      <ComboBox fx:id="libraryBox" layoutX="790.0" layoutY="115.0" onAction="#libraryComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" promptText="Select" />
       <TableView fx:id="musicTable" layoutX="180.0" layoutY="57.0" prefHeight="373.0" prefWidth="500.0">
         <columns>
           <TableColumn fx:id="titleColumn" editable="false" prefWidth="170.0" text="Title" />
@@ -78,7 +73,7 @@
       <Label fx:id="customTagLabel" alignment="TOP_LEFT" layoutX="15.0" layoutY="328.0" prefHeight="36.0" prefWidth="160.0" text="Custom Tags:" wrapText="true" />
       <Button fx:id="createCustomTagButton" layoutX="190.0" layoutY="564.0" mnemonicParsing="false" onAction="#createCustomTag" text="Create Custom Tag" />
       <Button fx:id="stopPlaybackButton" layoutX="334.0" layoutY="564.0" mnemonicParsing="false" onAction="#resetPlayer" text="Stop Playback" />
-      <ComboBox fx:id="playlistBox" layoutX="790.0" layoutY="178.0" onAction="#playlistComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" />
+      <ComboBox fx:id="playlistBox" layoutX="790.0" layoutY="178.0" onAction="#playlistComboBoxItemClicked" prefHeight="25.0" prefWidth="116.0" promptText="Select" />
       <Label layoutX="790.0" layoutY="98.0" text="Libraries" />
       <Label layoutX="790.0" layoutY="161.0" text="Playlists" />
       <Button fx:id="orderButton" layoutX="463.0" layoutY="577.0" mnemonicParsing="false" onAction="#changeOrder" text="Change Order:" visible="false" />
