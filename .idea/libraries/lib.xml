@@ -1,15 +1,10 @@
 <component name="libraryTable">
   <library name="lib">
-    <CLASSES>
-      <root url="file://$USER_HOME$/Libraries/javafx-sdk-20.0.1/lib" />
-      <root url="jar://$USER_HOME$/Libraries/sqlite-jdbc-3.42.0.0.jar!/" />
-      <root url="jar://$USER_HOME$/Libraries/mp3agic-0.9.1.jar!/" />
-    </CLASSES>
+    <CLASSES />
     <JAVADOC>
       <root url="jar://$USER_HOME$/Libraries/Documentation/openjfx-20.0.1-javadoc.zip!/javafx-20.0.1-javadoc" />
       <root url="jar://$USER_HOME$/Libraries/Documentation/mp3agic-0.9.1-javadoc.jar!/" />
     </JAVADOC>
     <SOURCES />
-    <jarDirectory url="file://$USER_HOME$/Libraries/javafx-sdk-20.0.1/lib" recursive="false" />
   </library>
 </component>
