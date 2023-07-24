@@ -9,12 +9,16 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
+import javafx.scene.media.MediaView;
 import javafx.stage.DirectoryChooser;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.sql.SQLException;
@@ -79,6 +83,8 @@ public class ApplicationController
     ComboBox<SearchCategory> searchBox;
     @FXML
     TextField searchText;
+    @FXML
+    ImageView albumArt;
 
     int lastIndex;
     Media media;
@@ -141,7 +147,6 @@ public class ApplicationController
                     progressbar.setMax(0.00);
 
                 }
-                System.out.println("trigg");
 
             }
         }
@@ -499,6 +504,9 @@ public class ApplicationController
         yearLabel.setText("Year: ");
         lyricsBox.setText("");
         customTagLabel.setText("Custom Tags: ");
+
+        if(albumArt.getImage()!=null)
+            albumArt.setImage(null);
     }
 
     void stopMusic()
@@ -553,6 +561,10 @@ public class ApplicationController
                         genreLabel.setText("Genre: " + metadata.getGenre());
                         yearLabel.setText("Year: " + metadata.getYear());
                         lyricsBox.setText(metadata.getLyrics());
+                        Image coverart = (Image) media.getMetadata().get("image");
+
+                        if(coverart!=null)
+                            albumArt.setImage(coverart);
 
                         String tags = obj.getCustomTags(filepath);
                         customTagLabel.setText("Custom Tags: " + tags);
