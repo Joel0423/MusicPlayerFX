@@ -6,6 +6,7 @@ import javafx.collections.ObservableList;
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
+import java.time.LocalDateTime;
 import java.util.logging.FileHandler;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -67,6 +68,7 @@ public class Connector
 
                     st2.executeUpdate();
                     st2.close();
+                    logger.info("Start: "+LocalDateTime.now().toString());
 
                     for (File f : fileArray)
                     {
@@ -151,6 +153,7 @@ public class Connector
                             st.clearParameters();
                         }
                     }
+                    logger.info("End: "+LocalDateTime.now().toString());
 
                 }
                 catch(SQLException e)
