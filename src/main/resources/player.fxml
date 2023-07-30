@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- Repository link- https://github.com/Joel0423/upskill_campus/ -->
+<!-- File link-       https://github.com/Joel0423/upskill_campus/blob/master/src/main/resources/player.fxml-->
 
 <?import javafx.geometry.Insets?>
 <?import javafx.scene.control.Button?>
