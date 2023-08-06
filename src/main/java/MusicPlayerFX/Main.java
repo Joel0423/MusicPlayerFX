@@ -1,8 +1,3 @@
-/*
- * Repository link- https://github.com/Joel0423/upskill_campus/
- * File link-       https://github.com/Joel0423/upskill_campus/blob/master/src/main/java/MusicPlayerFX/Main.java
- */
-
 package MusicPlayerFX;
 
 import javafx.application.Application;
